@@ -1,0 +1,79 @@
+#==================================================================BASIC SENTIMENT ANAYSIS SCRIPT=================================================================
+
+#READ THIS FIRST!
+#Use R Studio because it has a clear interface and it saves time and effort. Efficiency is key!
+#If you are a business/management student you may find this useful (if you are a manager and you want to support your analysis with more data you may find it useful too)
+
+#These are the packages you'll need
+require(twitteR)
+require(RCurl)
+require(tm)
+require(wordcloud)
+require(stringr)
+require(tidytext)
+require(dplyr)
+require(ggplot2)
+
+#Log in to your Twitter for developer account and create an application for your analysis, remember to be specific when describing your application in order to
+#speed up the approval process. You'll find all the required "x" in your api page.
+consumerKey = "x"
+consumerSecret = "x"
+accessToken = "x"
+accessSecret = "x"
+options(httr_oauth_cache=TRUE)
+
+setup_twitter_oauth(consumer_key = consumerKey, consumer_secret = consumerSecret,
+access_token = accessToken, access_secret = accessSecret)
+
+#This function will generate a set of tweets. Number one reason for using the argument "geocode" is specific targeting!Consider using it!
+Tweets <- searchTwitter("your hashtag/word here",n="number of tweets",lang="preferred language",geocode="latitude,longitude,radius")
+
+#Use twListToDF() to convert your list to df
+Tweets_df <- twListToDF(Tweet_clean)
+
+#It is convenient to tokenize words to make a nice histogram.
+tweets_words <- Tweets_df %>% select(id, text) %>% unnest_tokens(word,text)
+
+tweets_words %>% count(word,sort=T) %>% slice(1:20) %>%
+  ggplot(aes(x = reorder(word,
+    n, function(n) -n), y = n)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 60,
+    hjust = 1)) + xlab("")
+
+#Now comes the boring part: you'll need to look at the histogram and every time you find a useless word add it in the character vector argument of the bind_rows function.
+#This is going to take a few iterations until you get the right amount of stop words.
+my_stop_words <- stop_words %>% select(-lexicon) %>%
+  bind_rows(data.frame(word = c("the words that do not add value to you analysis")))
+interesting_words <- tweets_words %>% anti_join(my_stop_words)
+interesting_words %>% group_by(word) %>% tally(sort=TRUE) %>% slice(1:25) %>% ggplot(aes(x = reorder(word,
+      n, function(n) -n), y = n)) + geom_bar(stat = "identity") + theme(axis.text.x = element_text(angle = 60,
+      hjust = 1)) + xlab("")
+
+#To plot a wordcloud just create a vector and use the corresponding function
+words_char <- as.vector(interesting_words$word)
+wordcloud(words_char)
+
+#Finally, the following is the code for the bing sentiment analysis.
+bing_lex <- get_sentiments("bing")
+
+fn_sentiment <- Interesting_words %>% left_join(bing_lex)
+fn_sentiment %>% filter(!is.na(sentiment)) %>% group_by(sentiment) %>% summarise(n=n())
+
+#This will get you the bing chart
+bing_word_counts <- Interesting_words %>%
+inner_join(bing_lex) %>%
+  count(word, sentiment, sort = TRUE) %>%
+  ungroup()
+
+bing_word_counts %>%
+  group_by(sentiment) %>%
+  top_n(10) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~sentiment, scales = "free_y") +
+  labs(y = "Contribution to sentiment",
+         x = NULL) +
+    coord_flip()
+
+ 
