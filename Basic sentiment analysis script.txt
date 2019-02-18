@@ -3,6 +3,7 @@
 #READ THIS FIRST!
 #Use R Studio because it has a clear interface and it saves time and effort. Efficiency is key!
 #If you are a business/management student you may find this useful (if you are a manager and you want to support your analysis with more data you may find it useful too)
+#If you are new to Sentiment Analysis and opinion mining you can start by reading Bing's work "Sentiment Analysis".
 
 #These are the packages you'll need
 require(twitteR)
